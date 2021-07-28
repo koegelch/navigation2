@@ -58,7 +58,7 @@ namespace nav2_amcl
 using nav2_util::geometry_utils::orientationAroundZAxis;
 
 AmclNode::AmclNode()
-: nav2_util::LifecycleNode("amcl", "", true)
+: nav2_util::LifecycleNode("amcl", "")
 {
   RCLCPP_INFO(get_logger(), "Creating");
 
@@ -1221,13 +1221,13 @@ AmclNode::initTransforms()
   RCLCPP_INFO(get_logger(), "initTransforms");
 
   // Initialize transform listener and broadcaster
-  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(rclcpp_node_->get_clock());
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
   auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
-    rclcpp_node_->get_node_base_interface(),
-    rclcpp_node_->get_node_timers_interface());
+    get_node_base_interface(),
+    get_node_timers_interface());
   tf_buffer_->setCreateTimerInterface(timer_interface);
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(rclcpp_node_);
+  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(shared_from_this());
 
   sent_first_transform_ = false;
   latest_tf_valid_ = false;
@@ -1237,11 +1237,16 @@ AmclNode::initTransforms()
 void
 AmclNode::initMessageFilters()
 {
-  laser_scan_sub_ = std::make_unique<message_filters::Subscriber<sensor_msgs::msg::LaserScan>>(
-    rclcpp_node_.get(), scan_topic_, rmw_qos_profile_sensor_data);
+  laser_scan_sub_ = std::make_unique<message_filters::Subscriber<sensor_msgs::msg::LaserScan,
+      rclcpp_lifecycle::LifecycleNode>>(
+    shared_from_this(), scan_topic_, rmw_qos_profile_sensor_data);
 
   laser_scan_filter_ = std::make_unique<tf2_ros::MessageFilter<sensor_msgs::msg::LaserScan>>(
-    *laser_scan_sub_, *tf_buffer_, odom_frame_id_, 10, rclcpp_node_, transform_tolerance_);
+    *laser_scan_sub_, *tf_buffer_, odom_frame_id_, 10,
+    get_node_logging_interface(),
+    get_node_clock_interface(),
+    transform_tolerance_);
+
 
   laser_scan_connection_ = laser_scan_filter_->registerCallback(
     std::bind(
