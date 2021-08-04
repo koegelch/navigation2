@@ -61,7 +61,9 @@ PlannerServer::PlannerServer()
     "global_costmap", std::string{get_namespace()}, "global_costmap");
 
   // Launch a thread to run the costmap node
-  costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_ros_);
+  auto costmap_executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+  costmap_executor->add_node(costmap_ros_->get_node_base_interface());
+  costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_executor);
 }
 
 PlannerServer::~PlannerServer()

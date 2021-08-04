@@ -165,6 +165,9 @@ private:
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<map_msgs::msg::OccupancyGridUpdate>::SharedPtr map_update_sub_;
 
+  // a separate callback group for range subscribers
+  rclcpp::CallbackGroup::SharedPtr callback_group_;
+
   // Parameters
   std::string map_topic_;
   bool map_subscribe_transient_local_;

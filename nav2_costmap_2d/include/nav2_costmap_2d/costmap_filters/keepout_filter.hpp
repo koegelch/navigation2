@@ -100,6 +100,9 @@ private:
   rclcpp::Subscription<nav2_msgs::msg::CostmapFilterInfo>::SharedPtr filter_info_sub_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr mask_sub_;
 
+  // a separate callback group for filter and mask subscribers
+  rclcpp::CallbackGroup::SharedPtr callback_group_;
+
   std::unique_ptr<Costmap2D> mask_costmap_;
 
   std::string mask_frame_;  // Frame where mask located in

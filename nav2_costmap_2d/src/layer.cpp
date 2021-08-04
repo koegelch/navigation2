@@ -49,17 +49,12 @@ Layer::initialize(
   LayeredCostmap * parent,
   std::string name,
   tf2_ros::Buffer * tf,
-  const nav2_util::LifecycleNode::WeakPtr & node,
-  rclcpp::Node::SharedPtr client_node,
-  rclcpp::Node::SharedPtr rclcpp_node)
+  const nav2_util::LifecycleNode::WeakPtr & node)
 {
   layered_costmap_ = parent;
   name_ = name;
   tf_ = tf;
-  client_node_ = client_node;
-  rclcpp_node_ = rclcpp_node;
   node_ = node;
-
   {
     auto node_shared_ptr = node_.lock();
     logger_ = node_shared_ptr->get_logger();

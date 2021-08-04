@@ -38,7 +38,23 @@ public:
    * @brief A background thread to process executor's callbacks constructor
    * @param executor Interface to executor to spin in thread
    */
-  explicit NodeThread(rclcpp::executors::SingleThreadedExecutor::SharedPtr executor);
+  explicit NodeThread(rclcpp::Executor::SharedPtr executor);
+
+  /**
+   * @brief A background thread to process single threaded executor's callbacks constructor
+   * @param executor Interface to single threaded executor to spin in thread
+   */
+  explicit NodeThread(rclcpp::executors::SingleThreadedExecutor::SharedPtr executor)
+  : NodeThread(std::static_pointer_cast<rclcpp::Executor>(executor))
+  {}
+
+  /**
+   * @brief A background thread to process multi threaded executor's callbacks constructor
+   * @param executor Interface to multi threaded executor to spin in thread
+   */
+  explicit NodeThread(rclcpp::executors::MultiThreadedExecutor::SharedPtr executor)
+  : NodeThread(std::static_pointer_cast<rclcpp::Executor>(executor))
+  {}
 
   /**
    * @brief A background thread to process node callbacks constructor

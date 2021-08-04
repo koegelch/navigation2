@@ -112,6 +112,11 @@ void ObstacleLayer::onInitialize()
 
   global_frame_ = layered_costmap_->getGlobalFrameID();
 
+  // create a separate callback group for observation message subscriber
+  callback_group_ = node->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  auto sub_opt = rclcpp::SubscriptionOptions();
+  sub_opt.callback_group = callback_group_;
+
   // now we need to split the topics based on whitespace which we can use a stringstream for
   std::stringstream ss(topics_string);
 
@@ -211,14 +216,14 @@ void ObstacleLayer::onInitialize()
 
     // create a callback for the topic
     if (data_type == "LaserScan") {
-      std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::LaserScan>> sub(
-        new message_filters::Subscriber<sensor_msgs::msg::LaserScan>(
-          rclcpp_node_, topic, custom_qos_profile));
+      auto sub = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::LaserScan,
+          rclcpp_lifecycle::LifecycleNode>>(node, topic, custom_qos_profile, sub_opt);
       sub->unsubscribe();
 
-      std::shared_ptr<tf2_ros::MessageFilter<sensor_msgs::msg::LaserScan>> filter(
-        new tf2_ros::MessageFilter<sensor_msgs::msg::LaserScan>(
-          *sub, *tf_, global_frame_, 50, rclcpp_node_));
+      auto filter = std::make_shared<tf2_ros::MessageFilter<sensor_msgs::msg::LaserScan>>(
+        *sub, *tf_, global_frame_, 50,
+        node->get_node_logging_interface(),
+        node->get_node_clock_interface());
 
       if (inf_is_valid) {
         filter->registerCallback(
@@ -239,9 +244,8 @@ void ObstacleLayer::onInitialize()
       observation_notifiers_.back()->setTolerance(rclcpp::Duration::from_seconds(0.05));
 
     } else {
-      std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> sub(
-        new message_filters::Subscriber<sensor_msgs::msg::PointCloud2>(
-          rclcpp_node_, topic, custom_qos_profile));
+      auto sub = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2,
+          rclcpp_lifecycle::LifecycleNode>>(node, topic, custom_qos_profile, sub_opt);
       sub->unsubscribe();
 
       if (inf_is_valid) {
@@ -250,9 +254,10 @@ void ObstacleLayer::onInitialize()
           "obstacle_layer: inf_is_valid option is not applicable to PointCloud observations.");
       }
 
-      std::shared_ptr<tf2_ros::MessageFilter<sensor_msgs::msg::PointCloud2>> filter(
-        new tf2_ros::MessageFilter<sensor_msgs::msg::PointCloud2>(
-          *sub, *tf_, global_frame_, 50, rclcpp_node_));
+      auto filter = std::make_shared<tf2_ros::MessageFilter<sensor_msgs::msg::PointCloud2>>(
+        *sub, *tf_, global_frame_, 50,
+        node->get_node_logging_interface(),
+        node->get_node_clock_interface());
 
       filter->registerCallback(
         std::bind(

@@ -215,6 +215,8 @@ private:
   rclcpp::Time last_reading_time_;
   unsigned int buffered_readings_;
   std::vector<rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr> range_subs_;
+  // a separate callback group for range subscribers
+  rclcpp::CallbackGroup::SharedPtr callback_group_;
   double min_x_, min_y_, max_x_, max_y_;
 
   /**

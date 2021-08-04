@@ -64,6 +64,12 @@ void KeepoutFilter::initializeFilter(
   }
 
   filter_info_topic_ = filter_info_topic;
+
+  // create a separate callback group for filter info and mask subscriber
+  callback_group_ = node->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  auto sub_opt = rclcpp::SubscriptionOptions();
+  sub_opt.callback_group = callback_group_;
+
   // Setting new costmap filter info subscriber
   RCLCPP_INFO(
     logger_,
@@ -71,7 +77,7 @@ void KeepoutFilter::initializeFilter(
     filter_info_topic_.c_str());
   filter_info_sub_ = node->create_subscription<nav2_msgs::msg::CostmapFilterInfo>(
     filter_info_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable(),
-    std::bind(&KeepoutFilter::filterInfoCallback, this, std::placeholders::_1));
+    std::bind(&KeepoutFilter::filterInfoCallback, this, std::placeholders::_1), sub_opt);
 
   global_frame_ = layered_costmap_->getGlobalFrameID();
 }
@@ -110,6 +116,9 @@ void KeepoutFilter::filterInfoCallback(
 
   mask_topic_ = msg->filter_mask_topic;
 
+  auto sub_opt = rclcpp::SubscriptionOptions();
+  sub_opt.callback_group = callback_group_;
+
   // Setting new filter mask subscriber
   RCLCPP_INFO(
     logger_,
@@ -117,7 +126,7 @@ void KeepoutFilter::filterInfoCallback(
     mask_topic_.c_str());
   mask_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(
     mask_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable(),
-    std::bind(&KeepoutFilter::maskCallback, this, std::placeholders::_1));
+    std::bind(&KeepoutFilter::maskCallback, this, std::placeholders::_1), sub_opt);
 }
 
 void KeepoutFilter::maskCallback(

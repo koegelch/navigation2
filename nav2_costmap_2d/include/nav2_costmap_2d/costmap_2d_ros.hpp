@@ -295,8 +295,6 @@ public:
   bool getUseRadius() {return use_radius_;}
 
 protected:
-  rclcpp::Node::SharedPtr client_node_;
-
   // Publishers and subscribers
   rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PolygonStamped>::SharedPtr
     footprint_pub_;

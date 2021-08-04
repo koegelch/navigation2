@@ -74,9 +74,7 @@ public:
     LayeredCostmap * parent,
     std::string name,
     tf2_ros::Buffer * tf,
-    const nav2_util::LifecycleNode::WeakPtr & node,
-    rclcpp::Node::SharedPtr client_node,
-    rclcpp::Node::SharedPtr rclcpp_node);
+    const nav2_util::LifecycleNode::WeakPtr & node);
   /** @brief Stop publishers. */
   virtual void deactivate() {}
   /** @brief Restart publishers if they've been stopped. */
@@ -160,8 +158,6 @@ protected:
   LayeredCostmap * layered_costmap_;
   std::string name_;
   tf2_ros::Buffer * tf_;
-  rclcpp::Node::SharedPtr client_node_;
-  rclcpp::Node::SharedPtr rclcpp_node_;
   rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
   rclcpp::Clock::SharedPtr clock_;
   rclcpp::Logger logger_{rclcpp::get_logger("nav2_costmap_2d")};

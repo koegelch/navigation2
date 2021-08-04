@@ -63,7 +63,9 @@ ControllerServer::ControllerServer()
     "local_costmap", std::string{get_namespace()}, "local_costmap");
 
   // Launch a thread to run the costmap node
-  costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_ros_);
+  auto costmap_executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+  costmap_executor->add_node(costmap_ros_->get_node_base_interface());
+  costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_executor);
 }
 
 ControllerServer::~ControllerServer()

@@ -62,7 +62,7 @@ Costmap2DROS::Costmap2DROS(
   const std::string & name,
   const std::string & parent_namespace,
   const std::string & local_namespace)
-: nav2_util::LifecycleNode(name, "", true,
+: nav2_util::LifecycleNode(name, "", false,
     // NodeOption arguments take precedence over the ones provided on the command line
     // use this to make sure the node is placed on the provided namespace
     // TODO(orduno) Pass a sub-node instead of creating a new node for better handling
@@ -81,9 +81,6 @@ Costmap2DROS::Costmap2DROS(
     "nav2_costmap_2d::InflationLayer"}
 {
   RCLCPP_INFO(get_logger(), "Creating Costmap");
-  auto options = rclcpp::NodeOptions().arguments(
-    {"--ros-args", "-r", std::string("__node:=") + get_name() + "_client", "--"});
-  client_node_ = std::make_shared<rclcpp::Node>("_", options);
 
   std::vector<std::string> clearable_layers{"obstacle_layer", "voxel_layer", "range_layer"};
 
@@ -137,10 +134,10 @@ Costmap2DROS::on_configure(const rclcpp_lifecycle::State & /*state*/)
   }
 
   // Create the transform-related objects
-  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(rclcpp_node_->get_clock());
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
   auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
-    rclcpp_node_->get_node_base_interface(),
-    rclcpp_node_->get_node_timers_interface());
+    get_node_base_interface(),
+    get_node_timers_interface());
   tf_buffer_->setCreateTimerInterface(timer_interface);
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -153,8 +150,7 @@ Costmap2DROS::on_configure(const rclcpp_lifecycle::State & /*state*/)
 
     // TODO(mjeronimo): instead of get(), use a shared ptr
     plugin->initialize(
-      layered_costmap_.get(), plugin_names_[i], tf_buffer_.get(),
-      shared_from_this(), client_node_, rclcpp_node_);
+      layered_costmap_.get(), plugin_names_[i], tf_buffer_.get(), shared_from_this());
 
     RCLCPP_INFO(get_logger(), "Initialized plugin \"%s\"", plugin_names_[i].c_str());
   }
@@ -166,8 +162,7 @@ Costmap2DROS::on_configure(const rclcpp_lifecycle::State & /*state*/)
     layered_costmap_->addFilter(filter);
 
     filter->initialize(
-      layered_costmap_.get(), filter_names_[i], tf_buffer_.get(),
-      shared_from_this(), client_node_, rclcpp_node_);
+      layered_costmap_.get(), filter_names_[i], tf_buffer_.get(), shared_from_this());
 
     RCLCPP_INFO(get_logger(), "Initialized costmap filter \"%s\"", filter_names_[i].c_str());
   }

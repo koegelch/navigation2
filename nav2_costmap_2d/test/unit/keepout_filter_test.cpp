@@ -225,7 +225,7 @@ void TestNode::createKeepoutFilter(const std::string & global_frame)
     rclcpp::Parameter(FILTER_NAME + ".filter_info_topic", INFO_TOPIC));
 
   keepout_filter_ = std::make_shared<nav2_costmap_2d::KeepoutFilter>();
-  keepout_filter_->initialize(&layers, FILTER_NAME, tf_buffer_.get(), node_, nullptr, nullptr);
+  keepout_filter_->initialize(&layers, FILTER_NAME, tf_buffer_.get(), node_);
   keepout_filter_->initializeFilter(INFO_TOPIC);
 
   // Wait until mask will be received by KeepoutFilter

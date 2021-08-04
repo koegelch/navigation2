@@ -130,6 +130,9 @@ private:
   rclcpp::Subscription<nav2_msgs::msg::CostmapFilterInfo>::SharedPtr filter_info_sub_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr mask_sub_;
 
+  // a separate callback group for filter and mask subscribers
+  rclcpp::CallbackGroup::SharedPtr callback_group_;
+
   rclcpp_lifecycle::LifecyclePublisher<nav2_msgs::msg::SpeedLimit>::SharedPtr speed_limit_pub_;
 
   nav_msgs::msg::OccupancyGrid::SharedPtr filter_mask_;
