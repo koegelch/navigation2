@@ -231,7 +231,8 @@ nav2_util::CallbackReturn
 AmclNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
-
+  callback_group_ = create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive, false);
   initParameters();
   initTransforms();
   initMessageFilters();
@@ -240,7 +241,9 @@ AmclNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
   initOdometry();
   initParticleFilter();
   initLaserScan();
-
+  executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+  executor_->add_callback_group(callback_group_, get_node_base_interface());
+  executor_thread_ = std::make_unique<nav2_util::NodeThread>(executor_);
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -324,6 +327,8 @@ nav2_util::CallbackReturn
 AmclNode::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Cleaning up");
+
+  executor_thread_.reset();
 
   // Get rid of the inputs first (services and message filter input), so we
   // don't continue to process incoming messages
@@ -1237,9 +1242,11 @@ AmclNode::initTransforms()
 void
 AmclNode::initMessageFilters()
 {
+  auto sub_opt = rclcpp::SubscriptionOptions();
+  sub_opt.callback_group = callback_group_;
   laser_scan_sub_ = std::make_unique<message_filters::Subscriber<sensor_msgs::msg::LaserScan,
       rclcpp_lifecycle::LifecycleNode>>(
-    shared_from_this(), scan_topic_, rmw_qos_profile_sensor_data);
+    shared_from_this(), scan_topic_, rmw_qos_profile_sensor_data, sub_opt);
 
   laser_scan_filter_ = std::make_unique<tf2_ros::MessageFilter<sensor_msgs::msg::LaserScan>>(
     *laser_scan_sub_, *tf_buffer_, odom_frame_id_, 10,
@@ -1267,13 +1274,17 @@ AmclNode::initPubSub()
     "amcl_pose",
     rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
 
+  auto sub_opt = rclcpp::SubscriptionOptions();
+  sub_opt.callback_group = callback_group_;
   initial_pose_sub_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "initialpose", rclcpp::SystemDefaultsQoS(),
-    std::bind(&AmclNode::initialPoseReceived, this, std::placeholders::_1));
+    std::bind(&AmclNode::initialPoseReceived, this, std::placeholders::_1),
+    sub_opt);
 
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
     map_topic_, rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable(),
-    std::bind(&AmclNode::mapReceived, this, std::placeholders::_1));
+    std::bind(&AmclNode::mapReceived, this, std::placeholders::_1),
+    sub_opt);
 
   RCLCPP_INFO(get_logger(), "Subscribed to map topic.");
 }
@@ -1283,11 +1294,15 @@ AmclNode::initServices()
 {
   global_loc_srv_ = create_service<std_srvs::srv::Empty>(
     "reinitialize_global_localization",
-    std::bind(&AmclNode::globalLocalizationCallback, this, _1, _2, _3));
+    std::bind(&AmclNode::globalLocalizationCallback, this, _1, _2, _3),
+    rmw_qos_profile_services_default,
+    callback_group_);
 
   nomotion_update_srv_ = create_service<std_srvs::srv::Empty>(
     "request_nomotion_update",
-    std::bind(&AmclNode::nomotionUpdateCallback, this, _1, _2, _3));
+    std::bind(&AmclNode::nomotionUpdateCallback, this, _1, _2, _3),
+    rmw_qos_profile_services_default,
+    callback_group_);
 }
 
 void
